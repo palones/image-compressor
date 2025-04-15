@@ -136,32 +136,30 @@ function compressImage(file, quality, previewId) {
             
             ctx.drawImage(img, 0, 0);
             
-            // 使用递归方式找到合适的压缩质量
-            const compressWithQuality = (targetQuality) => {
-                canvas.toBlob((blob) => {
-                    // 如果压缩后大小大于原图，则使用原图
-                    if (blob.size > file.size) {
+            // 先创建一个质量为1的blob作为基准
+            canvas.toBlob((originalBlob) => {
+                // 使用目标质量进行压缩
+                canvas.toBlob((compressedBlob) => {
+                    // 如果压缩后大小大于原始大小，则使用原始质量的blob
+                    if (compressedBlob.size > originalBlob.size) {
                         const imageData = images.get(file);
-                        imageData.compressedBlob = file;
+                        imageData.compressedBlob = originalBlob;
                         images.set(file, imageData);
                         
-                        document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(file);
-                        document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(file.size);
+                        document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(originalBlob);
+                        document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(originalBlob.size);
                     } else {
                         const imageData = images.get(file);
-                        imageData.compressedBlob = blob;
+                        imageData.compressedBlob = compressedBlob;
                         images.set(file, imageData);
                         
-                        document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(blob);
-                        document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(blob.size);
+                        document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(compressedBlob);
+                        document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(compressedBlob.size);
                     }
                     
                     updateDownloadButton();
-                }, file.type, targetQuality);
-            };
-            
-            // 开始压缩
-            compressWithQuality(quality);
+                }, file.type, quality);
+            }, file.type, 1.0); // 使用最高质量1.0创建原始blob
         };
         img.src = e.target.result;
     };
