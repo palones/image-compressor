@@ -122,9 +122,22 @@ function deleteImage(previewId) {
     updateDownloadButton();
 }
 
+// 记录使用统计
+function recordUsage(originalSize, compressedSize) {
+    // 在实际应用中，这里应该发送数据到服务器
+    const usageData = {
+        time: new Date().getTime(),
+        imageCount: 1,
+        originalSize: originalSize,
+        compressedSize: compressedSize
+    };
+    
+    // 这里模拟发送数据，实际应用中应该使用fetch或axios发送到服务器
+    console.log('记录使用数据:', usageData);
+}
+
 // 压缩图片
 function compressImage(file, quality, previewId) {
-    // 创建一个新的 FileReader
     const reader = new FileReader();
     reader.onload = (e) => {
         const img = new Image();
@@ -132,51 +145,54 @@ function compressImage(file, quality, previewId) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // 设置canvas尺寸为图片原始尺寸
             canvas.width = img.width;
             canvas.height = img.height;
             
-            // 在canvas上绘制图片
             ctx.drawImage(img, 0, 0);
-
-            // 创建Blob并更新预览
-            const updateImageDisplay = (blob, isOriginal = false) => {
-                // 验证blob大小
-                if (!isOriginal && blob.size > file.size) {
-                    // 如果压缩后反而更大，使用原文件
-                    updateImageDisplay(file, true);
-                    return;
-                }
-
-                // 更新预览和大小显示
+            
+            // 如果是100%质量，直接使用原始文件
+            if (quality >= 1) {
                 const imageData = images.get(file);
-                imageData.compressedBlob = blob;
+                imageData.compressedBlob = file;
                 images.set(file, imageData);
-
-                // 释放之前的 URL
-                const oldUrl = document.getElementById(`compressed-${previewId}`).src;
-                if (oldUrl) {
-                    URL.revokeObjectURL(oldUrl);
-                }
-
-                // 创建新的 URL 并显示
-                const newUrl = URL.createObjectURL(blob);
-                document.getElementById(`compressed-${previewId}`).src = newUrl;
-                document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(blob.size);
+                
+                document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(file);
+                document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(file.size);
+                
+                // 记录统计数据
+                recordUsage(file.size, file.size);
                 
                 updateDownloadButton();
-            };
-
-            // 根据质量设置处理图片
-            if (quality >= 1) {
-                // 100% 质量时直接使用原文件
-                updateImageDisplay(file, true);
-            } else {
-                // 进行压缩
-                canvas.toBlob((blob) => {
-                    updateImageDisplay(blob);
-                }, file.type, quality);
+                return;
             }
+            
+            // 进行压缩
+            canvas.toBlob((blob) => {
+                // 如果压缩后大小大于原图，则使用原图
+                if (blob.size > file.size) {
+                    const imageData = images.get(file);
+                    imageData.compressedBlob = file;
+                    images.set(file, imageData);
+                    
+                    document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(file);
+                    document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(file.size);
+                    
+                    // 记录统计数据
+                    recordUsage(file.size, file.size);
+                } else {
+                    const imageData = images.get(file);
+                    imageData.compressedBlob = blob;
+                    images.set(file, imageData);
+                    
+                    document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(blob);
+                    document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(blob.size);
+                    
+                    // 记录统计数据
+                    recordUsage(file.size, blob.size);
+                }
+                
+                updateDownloadButton();
+            }, file.type, quality);
         };
         img.src = e.target.result;
     };

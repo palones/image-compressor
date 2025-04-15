@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片压缩工具 - 后台管理</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="icon" type="image/svg+xml" href="upload-icon.svg">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- 顶部导航 -->
+        <header class="admin-header">
+            <h1>图片压缩工具 - 后台管理</h1>
+            <div class="header-right">
+                <span id="currentTime"></span>
+            </div>
+        </header>
+
+        <!-- 统计概览 -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <h3>今日访问量</h3>
+                <p id="todayVisits">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>总访问量</h3>
+                <p id="totalVisits">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>压缩图片总数</h3>
+                <p id="totalImages">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>节省空间</h3>
+                <p id="savedSpace">0 MB</p>
+            </div>
+        </div>
+
+        <!-- 使用记录表格 -->
+        <div class="usage-records">
+            <h2>使用记录</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>IP地址</th>
+                            <th>图片数量</th>
+                            <th>原始大小</th>
+                            <th>压缩后大小</th>
+                            <th>压缩比例</th>
+                            <th>节省空间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTable">
+                        <!-- 数据将通过JavaScript动态添加 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="admin.js"></script>
+</body>
+</html> 
