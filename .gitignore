@@ -1,0 +1,31 @@
+# SSH 密钥
+*.pem
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.key
+*.pub
+
+# macOS 系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志文件
+*.log
+
+# 环境配置
+.env
+.env.local
+.env.*
+
+# 其他敏感文件
+config.json
+secrets.json 
