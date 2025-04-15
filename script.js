@@ -136,30 +136,39 @@ function compressImage(file, quality, previewId) {
             
             ctx.drawImage(img, 0, 0);
             
-            // 先创建一个质量为1的blob作为基准
-            canvas.toBlob((originalBlob) => {
-                // 使用目标质量进行压缩
-                canvas.toBlob((compressedBlob) => {
-                    // 如果压缩后大小大于原始大小，则使用原始质量的blob
-                    if (compressedBlob.size > originalBlob.size) {
-                        const imageData = images.get(file);
-                        imageData.compressedBlob = originalBlob;
-                        images.set(file, imageData);
-                        
-                        document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(originalBlob);
-                        document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(originalBlob.size);
-                    } else {
-                        const imageData = images.get(file);
-                        imageData.compressedBlob = compressedBlob;
-                        images.set(file, imageData);
-                        
-                        document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(compressedBlob);
-                        document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(compressedBlob.size);
-                    }
+            // 如果是100%质量，直接使用原始文件
+            if (quality >= 1) {
+                const imageData = images.get(file);
+                imageData.compressedBlob = file;
+                images.set(file, imageData);
+                
+                document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(file);
+                document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(file.size);
+                updateDownloadButton();
+                return;
+            }
+            
+            // 进行压缩
+            canvas.toBlob((compressedBlob) => {
+                // 如果压缩后大小大于原图，则使用原图
+                if (compressedBlob.size > file.size) {
+                    const imageData = images.get(file);
+                    imageData.compressedBlob = file;
+                    images.set(file, imageData);
                     
-                    updateDownloadButton();
-                }, file.type, quality);
-            }, file.type, 1.0); // 使用最高质量1.0创建原始blob
+                    document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(file);
+                    document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(file.size);
+                } else {
+                    const imageData = images.get(file);
+                    imageData.compressedBlob = compressedBlob;
+                    images.set(file, imageData);
+                    
+                    document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(compressedBlob);
+                    document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(compressedBlob.size);
+                }
+                
+                updateDownloadButton();
+            }, file.type, quality);
         };
         img.src = e.target.result;
     };
