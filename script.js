@@ -136,16 +136,32 @@ function compressImage(file, quality, previewId) {
             
             ctx.drawImage(img, 0, 0);
             
-            canvas.toBlob((blob) => {
-                const imageData = images.get(file);
-                imageData.compressedBlob = blob;
-                images.set(file, imageData);
-                
-                document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(blob);
-                document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(blob.size);
-                
-                updateDownloadButton();
-            }, file.type, quality);
+            // 使用递归方式找到合适的压缩质量
+            const compressWithQuality = (targetQuality) => {
+                canvas.toBlob((blob) => {
+                    // 如果压缩后大小大于原图，则使用原图
+                    if (blob.size > file.size) {
+                        const imageData = images.get(file);
+                        imageData.compressedBlob = file;
+                        images.set(file, imageData);
+                        
+                        document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(file);
+                        document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(file.size);
+                    } else {
+                        const imageData = images.get(file);
+                        imageData.compressedBlob = blob;
+                        images.set(file, imageData);
+                        
+                        document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(blob);
+                        document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(blob.size);
+                    }
+                    
+                    updateDownloadButton();
+                }, file.type, targetQuality);
+            };
+            
+            // 开始压缩
+            compressWithQuality(quality);
         };
         img.src = e.target.result;
     };
