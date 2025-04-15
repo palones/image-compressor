@@ -131,43 +131,45 @@ function compressImage(file, quality, previewId) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
+            // 设置canvas尺寸为图片原始尺寸
             canvas.width = img.width;
             canvas.height = img.height;
             
+            // 在canvas上绘制图片
             ctx.drawImage(img, 0, 0);
-            
-            // 如果是100%质量，直接使用原始文件
-            if (quality >= 1) {
+
+            // 创建Blob并更新预览
+            const processImage = (blob) => {
                 const imageData = images.get(file);
-                imageData.compressedBlob = file;
+                imageData.compressedBlob = blob;
                 images.set(file, imageData);
                 
-                document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(file);
-                document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(file.size);
+                document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(blob);
+                document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(blob.size);
                 updateDownloadButton();
+            };
+
+            // 如果是100%质量，尝试直接从canvas获取原始质量的blob
+            if (quality >= 1) {
+                canvas.toBlob((blob) => {
+                    // 如果生成的blob大于原文件，则直接使用原文件
+                    if (blob.size > file.size) {
+                        processImage(file);
+                    } else {
+                        processImage(blob);
+                    }
+                }, file.type, 1.0);
                 return;
             }
             
-            // 进行压缩
-            canvas.toBlob((compressedBlob) => {
-                // 如果压缩后大小大于原图，则使用原图
-                if (compressedBlob.size > file.size) {
-                    const imageData = images.get(file);
-                    imageData.compressedBlob = file;
-                    images.set(file, imageData);
-                    
-                    document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(file);
-                    document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(file.size);
+            // 其他质量值的处理
+            canvas.toBlob((blob) => {
+                // 如果压缩后反而变大，则使用原文件
+                if (blob.size > file.size) {
+                    processImage(file);
                 } else {
-                    const imageData = images.get(file);
-                    imageData.compressedBlob = compressedBlob;
-                    images.set(file, imageData);
-                    
-                    document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(compressedBlob);
-                    document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(compressedBlob.size);
+                    processImage(blob);
                 }
-                
-                updateDownloadButton();
             }, file.type, quality);
         };
         img.src = e.target.result;
