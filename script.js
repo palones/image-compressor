@@ -124,6 +124,7 @@ function deleteImage(previewId) {
 
 // 压缩图片
 function compressImage(file, quality, previewId) {
+    // 创建一个新的 FileReader
     const reader = new FileReader();
     reader.onload = (e) => {
         const img = new Image();
@@ -139,38 +140,43 @@ function compressImage(file, quality, previewId) {
             ctx.drawImage(img, 0, 0);
 
             // 创建Blob并更新预览
-            const processImage = (blob) => {
+            const updateImageDisplay = (blob, isOriginal = false) => {
+                // 验证blob大小
+                if (!isOriginal && blob.size > file.size) {
+                    // 如果压缩后反而更大，使用原文件
+                    updateImageDisplay(file, true);
+                    return;
+                }
+
+                // 更新预览和大小显示
                 const imageData = images.get(file);
                 imageData.compressedBlob = blob;
                 images.set(file, imageData);
-                
-                document.getElementById(`compressed-${previewId}`).src = URL.createObjectURL(blob);
+
+                // 释放之前的 URL
+                const oldUrl = document.getElementById(`compressed-${previewId}`).src;
+                if (oldUrl) {
+                    URL.revokeObjectURL(oldUrl);
+                }
+
+                // 创建新的 URL 并显示
+                const newUrl = URL.createObjectURL(blob);
+                document.getElementById(`compressed-${previewId}`).src = newUrl;
                 document.getElementById(`compressed-size-${previewId}`).textContent = formatFileSize(blob.size);
+                
                 updateDownloadButton();
             };
 
-            // 如果是100%质量，尝试直接从canvas获取原始质量的blob
+            // 根据质量设置处理图片
             if (quality >= 1) {
+                // 100% 质量时直接使用原文件
+                updateImageDisplay(file, true);
+            } else {
+                // 进行压缩
                 canvas.toBlob((blob) => {
-                    // 如果生成的blob大于原文件，则直接使用原文件
-                    if (blob.size > file.size) {
-                        processImage(file);
-                    } else {
-                        processImage(blob);
-                    }
-                }, file.type, 1.0);
-                return;
+                    updateImageDisplay(blob);
+                }, file.type, quality);
             }
-            
-            // 其他质量值的处理
-            canvas.toBlob((blob) => {
-                // 如果压缩后反而变大，则使用原文件
-                if (blob.size > file.size) {
-                    processImage(file);
-                } else {
-                    processImage(blob);
-                }
-            }, file.type, quality);
         };
         img.src = e.target.result;
     };
@@ -186,12 +192,22 @@ function updateDownloadButton() {
 downloadAllBtn.addEventListener('click', () => {
     images.forEach((imageData, file) => {
         if (imageData.compressedBlob) {
+            // 创建一个新的 Blob，确保数据完整性
+            const blob = new Blob([imageData.compressedBlob], { type: imageData.compressedBlob.type });
+            
+            // 创建下载链接
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(imageData.compressedBlob);
+            const url = URL.createObjectURL(blob);
+            link.href = url;
             link.download = `compressed_${file.name}`;
+            
+            // 触发下载
             document.body.appendChild(link);
             link.click();
+            
+            // 清理
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
     });
 });
